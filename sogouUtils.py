@@ -95,7 +95,7 @@ class Utils:
             naga='<regions>{}</regions>'.format(list)
             words = self.xMLParser(naga)
             xmlListRegions.append(words['regions'])
-        return xmlList
+        return xmlListRegions
 
 
     def tagAdvConversion(self, xmlDict):

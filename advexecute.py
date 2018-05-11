@@ -66,11 +66,13 @@ class Adv:
                     self.lock.acquire()
                     try:
                        self.advnull += 1
-                       """返回成功,但没有有效的数据"""
-                       Write().recordErrorLog( Utils().yeaterday, list[3], self.interface_name_adv, 10000, 'Data id null!')
-                       Logger().inilg('{}Null'.format(self.interface_name_adv),'{} update accountId is success but data is null {}'.format(list[3], xml))
                     finally:
                         self.lock.release()
+                    """返回成功,但没有有效的数据"""
+                    Write().recordErrorLog(Utils().yeaterday, list[3], self.interface_name_adv, 10000, 'Data id null!')
+                    Logger().inilg('{}Null'.format(self.interface_name_adv),
+                                   '{} update accountId is success but data is null {}'.format(list[3], xml))
+                    isSuccessApiCall = False
             else:
                 self.lock.acquire()
                 try:
@@ -102,7 +104,7 @@ class Adv:
 
     def executeAdvFunction(self):
         # 记录开始日志到MySQL里
-        #Write().start_info(self.yesterday, 'sogou_accountId_{}'.format(self.yesterday), self.interface_name_adv)
+        Write().start_info(self.yesterday, 'sogou_accountId_{}'.format(self.yesterday), self.interface_name_adv)
         futures = []
         if len(agsAndAdv) != 0:
            bodyAdv = """
@@ -113,7 +115,6 @@ class Adv:
            for advId in agsAndAdv:
                futures.append(ex.submit(self.getAdvData,advId,bodyAdv))
            wait(futures)
-           print('-------------------------------------')
            Conn().putDataToHbase(self.listEmpty, self.advHbase)
            Logger().inilg(self.interface_name_adv, 'advData send hbase {} number'.format(self.advnumber))
            Logger().inilg('{}Null'.format(self.interface_name_adv),'account data is null number is {}'.format(self.advnull))

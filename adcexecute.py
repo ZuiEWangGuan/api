@@ -8,7 +8,7 @@ from handleconn import Conn
 from loggers.logger import Logger
 
 """初始化线程池"""
-ex = futures.ThreadPoolExecutor(max_workers=15)
+ex = futures.ThreadPoolExecutor(max_workers=20)
 """初始化redis"""
 redis = Conn().redis_pool
 """初始化代理商信息"""
@@ -49,6 +49,7 @@ class Adc:
         xml = ApiHandle().sendHttpRequest(self.service_name_adc, adgId[0], adgId[1], adgId[2], adgId[5], bodyAdg)
         xmlDict = Utils().xMLParser(xml)
         if self.adcId in xmlDict.keys():
+            account = {'account_id': str(adgId[3])}
             """将cpcTypes标签里的数据取出来"""
             camIdTagsList = Utils().xmlParserList(xml, '<cpcIdeaTypes>', '</cpcIdeaTypes>')
             """将每一个标签内容解析为dict格式"""
@@ -62,18 +63,18 @@ class Adc:
             for camDict in camDictList:
                 del camDict['negativeWords']
                 del camDict['exactNegativeWords']
-                mergeData = Utils().matchAdcChinese(camDict)
-                """将广告组Id保存到redis里--->sogou_adcId_20180429,广告主id,广告组Id+关键词Id"""
-                # self.putIdToRedis(mergeData['cpcGrpId'], mergeData[self.adcId], adgId[3])
+                mergeDataTem = {**camDict, **account}
+                mergeData = Utils().matchAdcChinese(mergeDataTem)
+                """将广告组Id保存到redis里--->sogou_keyId_20180429,广告主id,广告组Id+关键词Id"""
                 redis.zadd(self.redisKey + self.yesterday, '{}_{}'.format(mergeData['cpcGrpId'], mergeData[self.adcId]),
                            adgId[3])
-                redis.rpush('sogou_adcId_prepare_' + self.yesterday,
-                            '{}_{}'.format(mergeData['cpcGrpId'], mergeData[self.adcId]))
+                #redis.rpush('sogou_adcId_prepare_' + self.yesterday,
+                #            '{}_{}'.format(mergeData['cpcGrpId'], mergeData[self.adcId]))
                 redis.expire(self.redisKey + self.yesterday, 30 * 24 * 3600)
                 """将广告主信息保存到hbase里--->0|20180428+accountid+adgid+keyid"""
                 self.putAdcDataToHbase(adgId[3], mergeData['cpcGrpId'], mergeData[self.adcId], mergeData)
                 Logger().inilg(self.interface_name_adc,
-                               '{} update  is success {}'.format(adgId[3], mergeData[self.adcId]))
+                               '{}_{} update  is success {}'.format(adgId[3],mergeData['cpcGrpId'],mergeData[self.adcId]))
             redis.sadd('updataadcId_vaild_accountId_' + self.yesterday, adgId[3])
             redis.expire('updataadcId_vaild_accountId_' + self.yesterday, 30 * 24 * 3600)
         else:
@@ -84,7 +85,7 @@ class Adc:
                 self.lock.release()
             Write().recordErrorLog(self.yesterday, adgId[2], self.interface_name_adc, 10000, 'Data id null!')
             Logger().inilg('{}Null'.format(self.interface_name_adc),
-                           '{} update adgId is success but data is null {}'.format(adgId[2], xmlDict))
+                           '{} update adgId is success but data is null {}'.format(adgId[2], xml))
 
 
     def putAdcDataToHbase(self, *hbaseKey):
@@ -103,7 +104,6 @@ class Adc:
         Write().start_info(self.yesterday, self.grpId + self.yesterday, self.interface_name_adc)
         if len(adgAdvId) != 0:
             futures = []
-            print(len(adgAdvId))
             for adgId in adgAdvId:
                 futures.append(ex.submit(self.getAdcData, adgId))
             wait(futures)

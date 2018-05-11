@@ -8,7 +8,7 @@ from handleconn import Conn
 from loggers.logger import Logger
 
 """初始化线程池"""
-ex = futures.ThreadPoolExecutor(max_workers=10)
+ex = futures.ThreadPoolExecutor(max_workers=15)
 """初始化redis"""
 redis = Conn().redis_pool
 """初始化代理商信息"""
@@ -49,6 +49,7 @@ class Adg:
                                           camId[1], camId[2], camId[5], bodyCam)
         xmlDict =Utils().xMLParser(xml)
         if self.adgId in xmlDict.keys():
+            account = {'account_id': str(camId[3])}
             """将cpcPlanTypes标签里的数据取出来"""
             camIdTagsList = Utils().xmlParserList(xml, '<cpcGrpTypes>', '</cpcGrpTypes>')
             """将每一个标签内容解析为dict格式"""
@@ -60,13 +61,13 @@ class Adg:
             finally:
                 self.lock.release()
             for camDict in camDictList:
-                mergeData = Utils().matchAdgChinese(camDict)
+                mergeDataTem = {**camDict, **account}
+                mergeData = Utils().matchAdgChinese(mergeDataTem)
                 """将广告组Id保存到redis里--->sogou_adgId_20180429,广告主id，广告计划Id+广告组Id"""
                 redis.zadd(self.redisKey + self.yesterday, '{}_{}'.format(mergeData['cpcPlanId'], mergeData[self.adgId]), camId[3])
-                redis.zadd('sogou_adgId_test_' + self.yesterday, mergeData[self.adgId], camId[3])
-                redis.rpush('sogou_adgId_prepare_' + self.yesterday,'{}_{}'.format(mergeData['cpcPlanId'], mergeData[self.adgId]))
+                #redis.zadd('sogou_adgId_test_' + self.yesterday, mergeData[self.adgId], camId[3])
+                #redis.rpush('sogou_adgId_prepare_' + self.yesterday,mergeData[self.adgId])
                 redis.expire(self.redisKey + self.yesterday,30*24*3600)
-                redis.expire('sogou_adgId_prepare_' + self.yesterday, 30 * 24 * 3600)
                 #self.putIdToRedis(mergeData['cpcPlanId'], mergeData[self.adgId], camId[3])
                 """将广告主信息保存到hbase里--->0|20180428+accountid+camid+adgid"""
                 self.putAdgDataToHbase(camId[3],mergeData['cpcPlanId'],mergeData[self.adgId], mergeData)
@@ -100,7 +101,7 @@ class Adg:
 
     def executeAdgFunction(self):
         # 记录开始日志到MySQL里
-        #Write().start_info(self.yesterday, self.planId + self.yesterday, self.interface_name_adg)
+        Write().start_info(self.yesterday, self.planId + self.yesterday, self.interface_name_adg)
         # camId--->"""代理商ID，代理商名称，代理商密码,广告主名称,广告主Id,广告计划Id,token"""
         if len(camAgsId) != 0:
             futures = []

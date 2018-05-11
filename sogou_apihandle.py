@@ -42,7 +42,6 @@ class ApiHandle:
                    self.allList.append((agsId.decode(),agsNa,agsPw,account.decode(),token.decode()))
             else:
                 Logger().inilg('advAndAgs'+self.yesterday,'{} 代理商没有广告主信息'.format(agsId.decode()))
-        print(len(self.allList))
         return self.allList
 
     def getAdvId(self):
@@ -76,6 +75,8 @@ class ApiHandle:
             """获取代理商Id和对应的计划Id"""
             allAgsIdAndAdvId = self.redis.zrangebyscore('sogou_camId_' + self.yesterday, accountId,accountId)
             if len(allAgsIdAndAdvId) != 0:
+                #self.redis.sadd('1111111', accountId)
+                #Logger().inilg('11111111', len(allAgsIdAndAdvId))
                 camTags=[]
                 for camId in allAgsIdAndAdvId:
                    """将代理商Id和广告计划Id切出来"""
@@ -85,10 +86,13 @@ class ApiHandle:
                 """代理商名称，代理商密码,广告主名称,广告主Id,广告计划Id集合,token"""
                 self.camList.append((accountAndAgs[1], accountAndAgs[2],accountName
                                      ,accountId,camTags,accountAndAgs[4]))
+                #Logger().inilg('222222', self.camList)
             else:
                 self.camId +=1
                 Logger().inilg('cam','{} 广告主没有广告计划信息'.format(accountId))
+        #Logger().inilg('333333',len(self.camList))
         Logger().inilg('cam', '一共没有广告计划的广告主的数量为 {}'.format(self.camId))
+        #Logger().inilg('444444',self.camList)
         return self.camList
 
     def getAdgId(self):

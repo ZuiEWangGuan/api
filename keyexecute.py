@@ -8,7 +8,7 @@ from handleconn import Conn
 from loggers.logger import Logger
 
 """初始化线程池"""
-ex = futures.ThreadPoolExecutor(max_workers=15)
+ex = futures.ThreadPoolExecutor(max_workers=20)
 """初始化redis"""
 redis = Conn().redis_pool
 """初始化代理商信息"""
@@ -36,10 +36,9 @@ class Key:
     def getkeyData(self, adgId):
         # adgId---> """代理商名称，代理商密码,广告主名称,广告主Id,广告组Id集合,token"""
         tag = ''
-        bodyAdg=''
         for adgIdList in adgId[4]:
             tag += '<cpcGrpIds> {} </cpcGrpIds>'.format(adgIdList)
-        bodyAdg += """
+        bodyAdg = """
           <soapenv:Body>
                <v11:{}>
                {}
@@ -50,6 +49,7 @@ class Key:
         xml = ApiHandle().sendHttpRequest(self.service_name_key, adgId[0], adgId[1], adgId[2], adgId[5], bodyAdg)
         xmlDict = Utils().xMLParser(xml)
         if self.keyId in xmlDict.keys():
+            account = {'account_id': str(adgId[3])}
             """将cpcTypes标签里的数据取出来"""
             camIdTagsList =  Utils().xmlParserList(xml, '<cpcTypes>', '</cpcTypes>')
             """将每一个标签内容解析为dict格式"""
@@ -63,19 +63,18 @@ class Key:
             for camDict in camDictList:
                 del camDict['negativeWords']
                 del camDict['exactNegativeWords']
-                mergeData =  Utils().matchKeyChinese(camDict)
+                mergeDataTem = {**camDict, **account}
+                mergeData =  Utils().matchKeyChinese(mergeDataTem)
                 """将广告组Id保存到redis里--->sogou_keyId_20180429,广告主id,广告组Id+关键词Id"""
-                # redisKey, prefix, suffix, dataId
-                # self.putIdToRedis(mergeData['cpcGrpId'], mergeData[self.keyId], adgId[3])
                 redis.zadd(self.redisKey + self.yesterday, '{}_{}'.format(mergeData['cpcGrpId'], mergeData[self.keyId]),
                            adgId[3])
-                redis.rpush('sogou_keyId_prepare_' + self.yesterday,
-                            '{}_{}'.format(mergeData['cpcGrpId'], mergeData[self.keyId]))
+                #redis.rpush('sogou_keyId_prepare_' + self.yesterday,
+                #            '{}_{}'.format(mergeData['cpcGrpId'], mergeData[self.keyId]))
                 redis.expire(self.redisKey + self.yesterday, 30 * 24 * 3600)
                 """将广告主信息保存到hbase里--->0|20180428+accountid+adgid+keyid"""
                 self.putKeyDataToHbase(adgId[3], mergeData['cpcGrpId'], mergeData[self.keyId], mergeData)
                 Logger().inilg(self.interface_name_key,
-                               '{} update  is success {}'.format(adgId[3], mergeData[self.keyId]))
+                               '{}_{} update  is success {}'.format(adgId[3],mergeData['cpcGrpId'] ,mergeData[self.keyId]))
             redis.sadd('updatakeyId_vaild_accountId_' + self.yesterday, adgId[3])
             redis.expire('updatakeyId_vaild_accountId_' + self.yesterday, 30 * 24 * 3600)
         else:

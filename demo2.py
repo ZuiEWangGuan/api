@@ -1,5 +1,5 @@
 import re
-from venv.Include.handleconn import Conn
+from handleconn import Conn
 
 # for validAccount in validAccountAll:
 #     #获取所有的广告计划ID
@@ -33,26 +33,46 @@ from venv.Include.handleconn import Conn
 
 #2282
 pool=Conn().getRedisConn()
-#pool.delete('sogou_accountId_20180508')
-#pool.delete('sogou_adgId_20180508')
-#pool.delete('sogou_adgId_prepare_20180508')
-#pool.delete('updataadgId_vaild_accountId_20180508')
-#pool.delete('sogou_adgId_test_20180508')
-#pool.delete('1111111')
-q=pool.zcard('sogou_accountId_20180508')
-l=pool.zcard('sogou_camId_20180508')
-p=pool.zcard('sogou_adgId_test_20180508')
-k=pool.llen('sogou_adgId_prepare_20180508')
-o=pool.scard('1111111')
-print(q)
-print(l)
-print(p)
-print(k)
-h=pool.zrangebyscore('sogou_accountId_20180508',14,14)
-for j in h:
-    a=str(j.decode()).split('##|')[1]
-    pool.sadd('666666',a)
-w=pool.scard('666666')
+#pool.delete('sogou_accountId_20180509')
+#pool.delete('sogou_adgId_20180509')
+#pool.delete('sogou_camId_20180509')
+#pool.delete('sogou_camId_prepare_20180509')
+#pool.delete('sogou_adgId_prepare_20180509')
+#pool.delete('updataadgId_vaild_accountId_20180509')
+#pool.delete('sogou_keyId_20180509')
+#pool.delete('sogou_keyId_prepare_20180509')
+#sogou_camId_prepare_
+#sogou_keyId_
+#sogou_adcId_prepare_
+#q=pool.zcard('sogou_accountId_20180509')
+#l=pool.zcard('sogou_camId_20180509')
+#y=pool.llen('sogou_camId_prepare_20180509')
+#t=pool.zcard('sogou_adgId_20180509')
+#p=pool.zcard('sogou_adgId_test_20180509')
+#k=pool.llen('sogou_adgId_prepare_20180509')
+#m=pool.scard('updataadgId_vaild_accountId_20180509')
+#t=pool.zcard('sogou_adcId_20180509')
+##p=pool.zcard('sogou_adgId_test_20180509')
+#k=pool.llen('sogou_adcId_prepare_20180509')
+t=pool.zcard('sogou_keyId_20180510')
+#p=pool.zcard('sogou_adgId_test_20180509')
+#updatakeyId_vaild_accountId_
+#k=pool.llen('sogou_adcId_prepare_20180510')
+m=pool.scard('updatakeyId_vaild_accountId_20180510')
+#updataadgId_vaild_accountId_
+#o=pool.scard('1111111')
+#print(q)
+#print(l)
+#print(y)
+print(t)
+#print(p)
+#print(k)
+print(m)
+#h=pool.zrangebyscore('sogou_accountId_20180508',14,14)
+#for j in h:
+#    a=str(j.decode()).split('##|')[1]
+#    pool.sadd('666666',a)
+#w=pool.scard('666666')
 #print(w)
 #print(o)
 # for a in k:

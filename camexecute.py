@@ -8,7 +8,7 @@ from handleconn import Conn
 from loggers.logger import Logger
 
 """初始化线程池"""
-ex = futures.ThreadPoolExecutor(max_workers=4)
+ex = futures.ThreadPoolExecutor(max_workers=6)
 """初始化redis"""
 redis = Conn().redis_pool
 """初始化代理商信息"""
@@ -44,8 +44,9 @@ class Cam:
             xmlDict = Utils().xMLParser(xml)
             if xmlDict['ns3:desc'] == 'success':
                 if self.camId in xmlDict.keys():
-                    """解析标签头信息"""
-                    headDict = Utils().xmlParserHeader(xml)
+                    account = {'account_id': str(accountId)}
+                    #"""解析标签头信息"""
+                    #headDict = Utils().xmlParserHeader(xml)
                     """将cpcPlanTypes标签里的数据取出来"""
                     camIdTagsList = Utils().xmlParserList(xml, '<cpcPlanTypes>', '</cpcPlanTypes>')
                     """将每一个标签内容解析为dict格式"""
@@ -59,7 +60,7 @@ class Cam:
                         self.lock.release()
                     for camDict in camDictList:
                         """将数据都和header合并一次"""
-                        mergeDataTem = {**headDict, **camDict}
+                        mergeDataTem = {**camDict, **account}
                         mergeData = Utils().matchCamChinese(mergeDataTem)
                         """将广告计划Id保存到redis里--->sogou_camId_20180429,广告主id，代理商Id+广告计划id"""
                         #ApiHandle().putIdToRedis(self.redisKey, dataList[0], mergeData[self.camId], accountId)
@@ -71,6 +72,7 @@ class Cam:
                     """将有效的广告主id记录到redis里"""
                     redis.sadd('updatacamId_vaild_accountId_' + self.yesterday, accountId)
                     redis.expire('updatacamId_vaild_accountId_' + self.yesterday,30*24*3600)
+                    isSuccessApiCall = False
                 else:
                     self.lock.acquire()
                     try:
@@ -81,7 +83,7 @@ class Cam:
                     Write().recordErrorLog(Utils().yeaterday, advName, self.interface_name_cam, 10000, 'Data id null!')
                     Logger().inilg('{}Null'.format(self.interface_name_cam),
                                    '{} update camId is success but data is null {}'.format(advName, xml))
-                isSuccessApiCall = False
+                    isSuccessApiCall = False
             else:
                 self.lock.acquire()
                 try:
